@@ -7,8 +7,8 @@ from yoctopuce.yocto_temperature import *
 
 
 TABLE_NAME = 'IoTThermocoupleData'
-AWS_ACCESS_KEY = 'AKIA2JLUQQPRENAAUL72'
-AWS_SECRET_KEY = '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'
+AWS_ACCESS_KEY = ''
+AWS_SECRET_KEY = ''
 
 
 
@@ -77,7 +77,7 @@ def getDeviceInfo(m):
 dbClient = boto3.client(
     'dynamodb',
     aws_access_key_id = AWS_ACCESS_KEY,
-    aws_secret_access_key = AWS_SECRET_KEY
+    aws_secret_access_key = AWS_SECRET_KEY,
     region_name = "us-east-1"
 )
 
