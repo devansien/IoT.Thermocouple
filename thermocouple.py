@@ -1,13 +1,63 @@
 import os, sys
+import boto3
 from yoctopuce.yocto_api import *
 from yoctopuce.yocto_temperature import *
 
 
 
 
+TABLE_NAME = 'IoTThermocoupleData'
+AWS_ACCESS_KEY = 'AKIA2JLUQQPRENAAUL72'
+AWS_SECRET_KEY = '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'
+
+
+
+
+# aws dynamo db i/o
+def createTable(client):
+    table = client.create_table(
+        TableName = TABLE_NAME,
+        KeySchema = [
+            {
+                'AttributeName': 'device-id',
+                'KeyType': 'HASH'
+            }
+        ],
+        AttributeDefinitions = [
+            {
+                'AttributeName': 'device-id',
+                'AttributeType': 'S'
+            }
+        ],
+        ProvisionedThroughput = {
+            'ReadCapacityUnits': 5,
+            'WriteCapacityUnits': 5
+        }
+    )
+    
+    client.get_waiter('table_exists').wait(TableName = TABLE_NAME)
+    print('table with name %s created.\n' % TABLE_NAME)
+
+
+def putTemperature(client, id, temperature):
+    response = client.put_item(
+        TableName = TABLE_NAME,
+        Item = {
+            'device-id': { 'S': id },
+            'temperature': { 'L': temperature }
+        }
+    )
+    
+    print('device with id %s and temperature %s saved.\n' % (id, temperature))
+
+
+
+
+# thermocouple
 def getTemp(ch1, ch2):
     temp1 = ch1.get_currentValue()
     temp2 = ch2.get_currentValue()
+    putTemperature(dbClient, serial, temp1)
     print('channel 1/2: ' + '%2.1f / ' % temp1 + \
           '%2.1f' % temp2 + ' deg C')
 
@@ -21,6 +71,17 @@ def getDeviceInfo(m):
 #    print('device logs:\n' + logs)
         
     
+
+
+# dynamo db init
+dbClient = boto3.client(
+    'dynamodb',
+    aws_access_key_id = AWS_ACCESS_KEY,
+    aws_secret_access_key = AWS_SECRET_KEY
+    region_name = "us-east-1"
+)
+
+createTable(dbClient)
 
 
 # virtual hub init
@@ -75,5 +136,6 @@ while channel1.isOnline():
         getDeviceInfo(module)
         YAPI.Sleep(1000)
     YAPI.Sleep(500)
+
 
 YAPI.FreeAPI()
